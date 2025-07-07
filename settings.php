@@ -153,6 +153,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     </button>
                 </div>
             </form>
+            <a href="index.php" class="btn btn-primary w-100 mt-3 d-flex align-items-center justify-content-center" style="font-size:1.1em;">
+                <i class="bi bi-arrow-left-circle me-2"></i> Back to Dashboard
+            </a>
         </div>
     </div>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
