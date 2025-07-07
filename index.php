@@ -43,11 +43,11 @@ if (file_exists($settingsFile)) {
     }
 }
 
-// Find deadlines within notification window
+// Find deadlines within notification window (exclude Published)
 $today = new DateTime();
 $notify_contents = [];
 foreach ($contents as $row) {
-    if (!empty($row['deadline'])) {
+    if (!empty($row['deadline']) && strtolower($row['status_name']) !== 'published') {
         $deadline = DateTime::createFromFormat('Y-m-d', $row['deadline']);
         if ($deadline) {
             $diff = (int)$today->diff($deadline)->format('%r%a');
@@ -57,6 +57,22 @@ foreach ($contents as $row) {
         }
     }
 }
+
+// --- Search and Pagination ---
+$search = trim($_GET['search'] ?? '');
+$page = max(1, (int)($_GET['page'] ?? 1));
+$perPage = 5;
+$filtered = $contents;
+if ($search !== '') {
+    $filtered = array_filter($contents, function($row) use ($search) {
+        return stripos($row['title'], $search) !== false || stripos($row['description'], $search) !== false;
+    });
+}
+$total = count($filtered);
+$totalPages = max(1, ceil($total / $perPage));
+$filtered = array_slice(array_values($filtered), ($page-1)*$perPage, $perPage);
+$from = $total ? ($page-1)*$perPage+1 : 0;
+$to = min($from+$perPage-1, $total);
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -295,7 +311,7 @@ foreach ($contents as $row) {
           <strong>Deadline Reminder:</strong>
           <?php foreach ($notify_contents as $n): ?>
             <div>
-              <b><?= htmlspecialchars($n['title']) ?></b> - deadline: <span class="text-danger fw-bold"><?= htmlspecialchars($n['deadline']) ?></span>
+              <b><?= htmlspecialchars($n['title']) ?></b> - deadline: <span class="text-danger fw-bold"><?= htmlspecialchars($n['deadline']) ?></span> <span class="badge badge-status ms-2">Status: <?= htmlspecialchars($n['status_name']) ?></span>
             </div>
           <?php endforeach; ?>
         </div>
@@ -304,6 +320,13 @@ foreach ($contents as $row) {
   <?php endif; ?>
   <div class="main-content">
     <div class="table-area">
+      <form class="mb-3 d-flex gap-2" method="get" action="">
+        <input type="text" class="form-control" name="search" placeholder="Search title or description..." value="<?= htmlspecialchars($search) ?>" style="max-width:320px;">
+        <button class="btn btn-outline-primary" type="submit"><i class="bi bi-search"></i> Search</button>
+        <?php if ($search !== ''): ?>
+          <a href="index.php" class="btn btn-outline-secondary">Clear</a>
+        <?php endif; ?>
+      </form>
       <table class="table table-striped table-hover align-middle mb-0">
         <thead class="table-light">
           <tr class="table-title-row">
@@ -318,10 +341,10 @@ foreach ($contents as $row) {
           </tr>
         </thead>
         <tbody>
-          <?php if (count($contents) === 0): ?>
+          <?php if (count($filtered) === 0): ?>
             <tr><td colspan="5" class="text-center text-secondary">No content found.</td></tr>
           <?php else: ?>
-            <?php foreach ($contents as $row): ?>
+            <?php foreach ($filtered as $row): ?>
             <tr>
               <td class="fw-semibold text-dark"><?= htmlspecialchars($row['title']) ?></td>
               <td style="max-width:320px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
@@ -335,23 +358,21 @@ foreach ($contents as $row) {
                 ?>
               </td>
               <td>
-                <div class="action-btns d-flex flex-row gap-2">
-                  <button type="button" class="btn btn-view d-inline-flex align-items-center" data-bs-toggle="modal" data-bs-target="#viewDetailModal"
-                    data-title="<?= htmlspecialchars($row['title']) ?>"
-                    data-description="<?= htmlspecialchars($row['description']) ?>"
-                    data-status="<?= htmlspecialchars($row['status_name']) ?>"
-                    data-deadline="<?= htmlspecialchars($row['deadline']) ?>"
-                    data-created="<?= htmlspecialchars($row['created_at']) ?>"
-                    data-updated="<?= htmlspecialchars($row['updated_at']) ?>">
-                    <i class="bi bi-eye me-1"></i>View
-                  </button>
-                  <a href="edit.php?id=<?= $row['content_id'] ?>" class="btn btn-edit d-inline-flex align-items-center">
-                    <i class="bi bi-pencil me-1"></i>Edit
-                  </a>
-                  <a href="delete.php?id=<?= $row['content_id'] ?>" class="btn btn-delete d-inline-flex align-items-center" onclick="return confirm('Are you sure you want to delete this content?');">
-                    <i class="bi bi-trash me-1"></i>Delete
-                  </a>
-                </div>
+                <button type="button" class="btn btn-view d-inline-flex align-items-center" data-bs-toggle="modal" data-bs-target="#viewDetailModal"
+                  data-title="<?= htmlspecialchars($row['title']) ?>"
+                  data-description="<?= htmlspecialchars($row['description']) ?>"
+                  data-status="<?= htmlspecialchars($row['status_name']) ?>"
+                  data-deadline="<?= htmlspecialchars($row['deadline']) ?>"
+                  data-created="<?= htmlspecialchars($row['created_at']) ?>"
+                  data-updated="<?= htmlspecialchars($row['updated_at']) ?>">
+                  <i class="bi bi-eye me-1"></i>View
+                </button>
+                <a href="edit.php?id=<?= $row['content_id'] ?>" class="btn btn-edit d-inline-flex align-items-center">
+                  <i class="bi bi-pencil me-1"></i>Edit
+                </a>
+                <a href="delete.php?id=<?= $row['content_id'] ?>" class="btn btn-delete d-inline-flex align-items-center" onclick="return confirm('Are you sure you want to delete this content?');">
+                  <i class="bi bi-trash me-1"></i>Delete
+                </a>
               </td>
               <td>
                 <span class="badge badge-status w-100">
@@ -364,6 +385,28 @@ foreach ($contents as $row) {
           <?php endif; ?>
         </tbody>
       </table>
+      <!-- Table summary -->
+      <div class="d-flex justify-content-between align-items-center mt-2 mb-1 px-1 small text-secondary">
+        <span>Showing <?= $from ?>–<?= $to ?> of <?= $total ?> items</span>
+      </div>
+      <!-- Pagination -->
+      <?php if ($totalPages > 1): ?>
+        <nav class="mt-2">
+          <ul class="pagination justify-content-center pagination-lg custom-pagination">
+            <li class="page-item<?= $page <= 1 ? ' disabled' : '' ?>">
+              <a class="page-link" href="?search=<?= urlencode($search) ?>&page=<?= $page-1 ?>" tabindex="-1">&laquo;</a>
+            </li>
+            <?php for ($i = 1; $i <= $totalPages; $i++): ?>
+              <li class="page-item<?= $i == $page ? ' active' : '' ?>">
+                <a class="page-link" href="?search=<?= urlencode($search) ?>&page=<?= $i ?>"><?= $i ?></a>
+              </li>
+            <?php endfor; ?>
+            <li class="page-item<?= $page >= $totalPages ? ' disabled' : '' ?>">
+              <a class="page-link" href="?search=<?= urlencode($search) ?>&page=<?= $page+1 ?>">&raquo;</a>
+            </li>
+          </ul>
+        </nav>
+      <?php endif; ?>
     </div>
   </div>
   <!-- Modal for View Detail -->
@@ -434,6 +477,33 @@ foreach ($contents as $row) {
     }
     .header-action .btn-light:hover {
       background: #e3eaf6;
+    }
+    /* Custom pagination styles */
+    .custom-pagination .page-link {
+      border-radius: 1.5rem !important;
+      margin: 0 0.15rem;
+      font-size: 1.15em;
+      min-width: 2.5rem;
+      text-align: center;
+      color: #1976d2;
+      border: 1.5px solid #e3e7ef;
+      background: #f6f8fb;
+      transition: background 0.15s, color 0.15s, box-shadow 0.15s;
+    }
+    .custom-pagination .page-link:focus {
+      box-shadow: 0 0 0 2px #1976d2aa;
+    }
+    .custom-pagination .page-item.active .page-link {
+      background: linear-gradient(90deg, #1976d2 60%, #42a5f5 100%);
+      color: #fff;
+      border: none;
+      font-weight: 700;
+      box-shadow: 0 2px 8px 0 rgba(31,38,135,0.10);
+    }
+    .custom-pagination .page-item.disabled .page-link {
+      color: #b0b8c9;
+      background: #f4f6fa;
+      border: 1.5px solid #e3e7ef;
     }
   </style>
 </body>
