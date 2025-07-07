@@ -293,11 +293,11 @@ $hasNoti = count($notify_contents) > 0 ? 'true' : 'false';
         <a class="btn btn-primary d-inline-flex align-items-center" href="new.php">
           <i class="bi bi-plus-circle me-1"></i> New Content
         </a>
-        <a href="settings.php" class="btn btn-light border-0 p-2 rounded-circle d-flex align-items-center justify-content-center ms-1" title="Settings" style="width:44px;height:44px;">
-          <i class="bi bi-gear-fill" style="font-size:1.7em;"></i>
+        <a href="settings.php" class="btn btn-outline-primary p-2 rounded-circle d-flex align-items-center justify-content-center ms-1 header-icon-btn" title="Settings">
+          <i class="bi bi-gear-fill" style="font-size:1.35em;"></i>
         </a>
-        <button id="notiBtn" class="btn btn-light border-0 p-2 rounded-circle d-flex align-items-center justify-content-center ms-1 position-relative" title="Notifications" type="button" data-bs-toggle="modal" data-bs-target="#notiModal" style="width:44px;height:44px;">
-          <i class="bi bi-bell-fill" style="font-size:1.7em;"></i>
+        <button id="notiBtn" class="btn btn-outline-primary p-2 rounded-circle d-flex align-items-center justify-content-center ms-1 position-relative header-icon-btn" title="Notifications" type="button" data-bs-toggle="modal" data-bs-target="#notiModal">
+          <i class="bi bi-bell-fill" style="font-size:1.35em;"></i>
           <span id="notiDot" class="pulse-dot" style="display:none;"></span>
         </button>
       </div>
@@ -501,20 +501,29 @@ $hasNoti = count($notify_contents) > 0 ? 'true' : 'false';
       outline: 2px solid #1976d2;
       outline-offset: 1px;
     }
-    .header-action .btn-light:hover, .header-action .btn-light:focus {
-      background: #e3eaf6;
+    .header-icon-btn {
+      border-width: 2px !important;
+      border-color: #1976d2 !important;
+      background: #f4f8ff !important;
+      color: #1976d2 !important;
+      width: 40px;
+      height: 40px;
+      transition: background 0.15s, color 0.15s, box-shadow 0.15s;
+      box-shadow: 0 1px 4px 0 rgba(31,38,135,0.06);
+    }
+    .header-icon-btn:hover, .header-icon-btn:focus {
+      background: #e3eaf6 !important;
+      color: #1565c0 !important;
       box-shadow: 0 2px 8px 0 rgba(31,38,135,0.10);
       outline: none;
     }
-    .header-action .btn-light:active {
-      background: #dbeafe;
+    .header-icon-btn:active {
+      background: #dbeafe !important;
+      color: #1565c0 !important;
     }
-    .header-action .btn-light .bi {
+    .header-icon-btn .bi {
       vertical-align: middle;
       display: inline-block;
-    }
-    .header-action .btn-light {
-      transition: background 0.15s, box-shadow 0.15s;
     }
     /* Custom pagination styles */
     .custom-pagination .page-link {
